@@ -1,0 +1,34 @@
+{
+  "version": "0.1.0",
+  "type": "model",
+  "fields": {
+    "isRealMethod": {
+      "rolefn": "IsAdminRole",
+      "type": "bool"
+    },
+    "merchant": {
+      "rolefn": "IsAdminRole",
+      "type": "string"
+    },
+    "login": {
+      "rolefn": "IsAdminRole",
+      "type": "string"
+    },
+    "password": {
+      "rolefn": "IsAdminRole",
+      "type": "string"
+    },
+    "urlPay": {
+      "rolefn": "IsAdminRole",
+      "type": "string"
+    },
+    "urlPayError": {
+      "rolefn": "IsAdminRole",
+      "type": "string"
+    },
+    "urlResult": {
+      "rolefn": "IsAdminRole",
+      "type": "string"
+    }
+  }
+}
