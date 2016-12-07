@@ -43,17 +43,26 @@ class SberbankApp extends PaymentsEngine {
 
     public function FormFill(PaymentsForm $form){
         $form->method = 'LINK';
-        $config = $this->Config();
 
-        $sberAPI = new SberbankAPI($config);
+        $sberAPI = new SberbankAPI($this);
         $result = $sberAPI->Register($form);
+
+        if (!$result){
+            $form->error = 1;
+            return;
+        }
+
+        if (isset($result->errorCode) && $result->errorCode > 0){
+            $this->LogError('Register Order: '.$result->errorMessage);
+            $form->error = 2;
+            return;
+        }
+
+        $form->url = $result->formUrl;
 
         if (isset($result->orderId) && !empty($result->orderId)){
             SberbankQuery::OrderAppend($this, $form->order->id, $result->orderId);
         }
-
-        $form->url = $result->formUrl;
-        $form->params = new stdClass();
     }
 
     public function API($action, $p1, $p2, $p3){
@@ -64,8 +73,7 @@ class SberbankApp extends PaymentsEngine {
     }
 
     public function OrderStatusRequest(PaymentsOrder $order){
-        $config = $this->Config();
-        $sberAPI = new SberbankAPI($config);
+        $sberAPI = new SberbankAPI($this);
 
         $d = SberbankQuery::Order($this, $order->id);
         if (empty($d)){

@@ -27,12 +27,12 @@ class SberbankConfig extends AbricosModel {
 class SberbankAPI {
 
     /**
-     * @var SberbankConfig
+     * @var SberbankApp
      */
-    public $config;
+    public $app;
 
-    public function __construct(SberbankConfig $config){
-        $this->config = $config;
+    public function __construct($app){
+        $this->app = $app;
     }
 
     /**
@@ -40,15 +40,22 @@ class SberbankAPI {
      * @return mixed
      */
     public function Register($form){
+        $config = $this->app->Config();
         $query = http_build_query(array(
             "orderNumber" => $form->order->id,
             "amount" => $form->order->total * 100,
             "returnUrl" => $form->urlReturnOk,
             "failUrl" => $form->urlReturnNo,
-            "userName" => $this->config->login,
-            "password" => $this->config->password
+            "userName" => $config->login,
+            "password" => $config->password
         ));
-        $resp = json_decode(file_get_contents("https://3dsec.sberbank.ru/payment/rest/register.do?".$query));
+        $content = @$this->GetSSLPage("https://3dsec.sberbank.ru/payment/rest/register.do?".$query);
+        if (!$content){
+            $this->app->LogError('SberbankAPI->Register() can not receive data');
+            return null;
+        }
+
+        $resp = json_decode($content);
         return $resp;
     }
 
@@ -58,14 +65,34 @@ class SberbankAPI {
      * @return mixed
      */
     function GetOrderStatus($sberOrderId){
+        $config = $this->app->Config();
+
         $query = http_build_query(
             array(
                 "orderId" => $sberOrderId,
-                "userName" => $this->config->login,
-                "password" => $this->config->password
+                "userName" => $config->login,
+                "password" => $config->password
             )
         );
-        $resp = json_decode(file_get_contents("https://3dsec.sberbank.ru/payment/rest/getOrderStatus.do?".$query));
+        $content = @$this->GetSSLPage("https://3dsec.sberbank.ru/payment/rest/getOrderStatus.do?".$query);
+        $resp = json_decode($content);
         return $resp;
+    }
+
+    public function GetSSLPage($url){
+        if (!function_exists('curl_init')){
+            return file_get_contents($url);
+        }
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_REFERER, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        return $result;
     }
 }
